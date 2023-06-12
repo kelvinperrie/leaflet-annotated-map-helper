@@ -28,9 +28,28 @@
             padding: .8571429em 1.1428571em;
             font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;
         }
+        @keyframes flipY{
+            from {
+                -webkit-transform: rotateY(180deg);
+            }
+            
+            to {
+                -webkit-transform: rotateY(-180deg);
+            }
+            
+        }
+        #repo-image{
+            animation: flipY 3s infinite;
+        }
+        #repo-link {
+            position: absolute;
+            top: 1em;
+            right: 5em;
+        }
      </style>
 </head>
 <body>
+    <a id="repo-link" target="_blank" href="https://github.com/kelvinperrie/leaflet-annotated-map-helper" title="click here to go have a look at this repository"><img src="images/GitHub-Mark-32px.png" id="repo-image" alt="github logo" /></a>
     <p>
         This page is intended to help get a map with drawings/annotations on it onto a webpage. 
         You can annotate the below map and it will automatically make some javascript that you can copy and paste onto your own webpage. 
