@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en-nz">
+<head>
+    <title>testing leaflet</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
+
+     <style>
+        html {
+            font-family: "Segoe UI Adjusted","Segoe UI","Liberation Sans",sans-serif;
+            margin: 5em;
+        }
+        #map { height: 600px; }
+        .code-block {
+            min-height: 30px;
+            background-color: #1f2937;
+            color: #C9D1D9;
+
+            border-radius: .375rem;
+            font-size: .875em;
+            font-weight: 400;
+            line-height: 1.7142857;
+            margin-bottom: 1.7142857em;
+            margin-top: 1.7142857em;
+            overflow-x: auto;
+            padding: .8571429em 1.1428571em;
+            font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;
+        }
+     </style>
+</head>
+<body>
+    <p>
+        This page is intended to help get a map with drawings/annotations on it onto a webpage. 
+        You can annotate the below map and it will automatically make some javascript that you can copy and paste onto your own webpage. 
+        It's using geoman.io to do the drawing stuff and leaflet for mapping stuff and openstreemap for map tiles.
+    </p>
+    <h2>Step 1: Draw your shapes/annotations on this map</h2>
+    <p>
+        Maybe try a rectangle. Everyone loves rectangles.
+    </p>
+    <div id="map"></div>
+
+    <h2>Step 2: Copy this stuff to your own page</h2>
+
+    Put these in the head of your page:
+    <pre class="code-block">
+&lt;link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+&lt;link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
+&lt;script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="">&lt;/script>
+&lt;script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js">&lt;/script></pre>
+
+
+    Put an element to hold the map and the javascript to setup the map and create the drawings on the page:
+    <pre class="code-block">
+&lt;div id="map">&lt;/div>
+&lt;script>
+<span id="map-javascript"></span>
+
+<span id="shape-javascript"></span>
+&lt;/script>
+    </pre>
+
+    <h2>Step 3: Other stuff you might want to do</h2>
+
+    <ul>
+        <li>Put some styling on the '#map' id to size your map to how you want it.</li>
+        <li>Mutter quietly to yourself "well I suppose that saved me some time".</li>
+    </ul>
+
+    <script>
+        function encodeHTMLEntities(text) {
+            var textArea = document.createElement('textarea');
+            textArea.innerText = text;
+            return textArea.innerHTML;
+        }
+
+        // a model to collect example code to display to the user
+        let CodeOutput = function() {
+            var self = this;
+
+            self.content = [];
+
+            self.Add = function(text) {
+                self.content.push(encodeHTMLEntities(text));
+            }
+
+            self.Display = function() {
+                return self.content.join("<br/>")
+            }
+
+        }
+
+        var map = L.map('map').setView([-39.11654316704711, 173.95433306694034], 16);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        // given a layer, figure out what type of drawing it holds
+        function getLayerType(targetLayer) {
+            //https://leafletjs.com/examples/extending/class-diagram.html
+            if (targetLayer instanceof L.Rectangle) {
+                return 'rectangle'
+            } else if (targetLayer instanceof L.Polygon) {
+                return 'polygon'
+            } else if (targetLayer instanceof L.Polyline) {
+                return 'polyline'
+            } else if (targetLayer instanceof L.Circle) {
+                return 'circle'
+            } else if (targetLayer instanceof L.Marker) {
+                if(targetLayer.options && targetLayer.options.textMarker === true) {
+                    return 'textMarker';
+                }
+                return 'marker'
+            }
+        }
+
+        // function DrawShapes() {
+        //     L.marker([51.50211782162702,-0.14556884765625003], { textMarker : true, text: "safdfasdfasdf" }).addTo(map);
+        //     L.polygon([[51.51023821132552,-0.13973236083984378],[51.49549222130398,-0.11175155639648439],[51.4936753561844,-0.13732910156250003],[51.499980636437265,-0.15672683715820315]]).addTo(map);
+        //     L.circle([51.51472517425703,-0.14007568359375003], { radius: 932.4389103656364 }).addTo(map);
+        // }
+        // DrawShapes();
+
+        function GenerateJavascript() {
+            GenerateMapJavascript();
+            GenerateShapeJavascript();
+        }
+
+        // create js to setup the map
+        function GenerateMapJavascript() {
+
+            let output = new CodeOutput();
+            let currentCenter = map.getCenter();
+            let currentZoom = map.getZoom()
+
+            output.Add("var map = L.map('map').setView(["+currentCenter.lat+", "+currentCenter.lng+"], "+currentZoom+");");
+            output.Add("L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href=\"http://www.openstreetmap.org/copyright\">OpenStreetMap</a>' }).addTo(map);");
+        
+
+            document.getElementById("map-javascript").innerHTML = output.Display();
+        }
+
+        // create js to do the drawings
+        function GenerateShapeJavascript() {
+            var layers = L.PM.Utils.findLayers(map);
+
+            let output = new CodeOutput();
+
+            for(var i=0; i< layers.length; i++) {
+                let lyr = layers[i];
+
+                console.log(lyr)
+                lyrType = getLayerType(lyr);
+
+                let latLngs = null;
+                let latLngString = null;
+                if (lyrType === 'circle' || lyrType === 'marker' || lyrType === 'textMarker') {
+                    // these guys just have a single latlng
+                    latLngs = lyr.getLatLng();
+                    latLngString = "["+latLngs.lat+","+latLngs.lng+"]";
+                } else if (lyrType === 'polyline') {
+                    // this guy has an array of latlngs
+                    latLngs = lyr.getLatLngs();
+                    let bits = latLngs.map(x => "["+x.lat+","+x.lng+"]")
+                    latLngString = "[" + bits.join(',') + "]";
+                } else {
+                    // these have an array of latlngs, but the first one is another array of latlngs. I'm sure there's a great reason, but I don't care.
+                    latLngs = lyr.getLatLngs();
+                    let bits = latLngs[0].map(x => "["+x.lat+","+x.lng+"]")
+                    latLngString = "[" + bits.join(',') + "]";
+                }
+
+                if(lyrType === 'circle') {
+                    output.Add("L.circle("+latLngString+", { radius: "+lyr._mRadius+" }).addTo(map);");
+                } else if(lyrType === 'polygon') {
+                    output.Add("L.polygon("+latLngString+").addTo(map);");
+                } else if (lyrType === 'rectangle') {
+                    output.Add("L.rectangle("+latLngString+").addTo(map);");
+                } else if (lyrType === 'polyline') {
+                    output.Add("L.polyline("+latLngString+").addTo(map);");
+                } else if (lyrType === 'marker') {
+                    output.Add("L.marker("+latLngString+").addTo(map);");
+                } else if(lyrType === 'textMarker') {
+                    output.Add("L.marker("+latLngString+", { textMarker : true, text: \""+ lyr.options.text+"\" }).addTo(map);");
+                }
+            }
+
+            document.getElementById("shape-javascript").innerHTML = output.Display();
+        }
+
+        map.pm.addControls({  
+            position: 'topleft',  
+            drawCircleMarker: false,
+            rotateMode: false,
+            cutPolygon: false,
+        });
+        
+        // when a layer is created update the javascript, but also hook up an edit handler to generate
+        // the js whenever the layer is edited
+        map.on('pm:create', ({ layer}) => {  
+            GenerateJavascript();
+            layer.on('pm:edit', e => {
+                GenerateJavascript();
+            });
+        });
+        map.on('pm:remove', ({ layer}) => {  
+            GenerateJavascript();
+        });
+        map.on('zoom', function() { 
+            GenerateJavascript();
+        });
+        map.on('move', function() { 
+            GenerateJavascript();
+        });
+
+    </script>
+</body>
+</html>
